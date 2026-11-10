@@ -1,4 +1,4 @@
-# AV Fitness (IronTrack)
+# AV Fitness
 
 A cross-platform strength training and workout tracking application built with **Flutter**, **Riverpod**, and **Firebase**, paired with a **Wear OS** health companion app.
 
