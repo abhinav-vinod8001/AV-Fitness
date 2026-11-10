@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "861922031134",
+    "project_id": "code-runner-nijqz",
+    "storage_bucket": "code-runner-nijqz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861922031134:android:5f495bad296733b4ff600f",
+        "android_client_info": {
+          "package_name": "com.irontrack.irontrack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "861922031134-e3rqn909emajrnt5c80quf613uqvqsv5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.irontrack.irontrack",
+            "certificate_hash": "c935bd4e746af45d62fc2da046547f2e50b820a0"
+          }
+        },
+        {
+          "client_id": "861922031134-ptgn8qchnuodpg2adrbq0a8rg5h8eq4j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKm_2KFFkZ-DjIHM0C7UMO3A6P_IVN8cs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "861922031134-ptgn8qchnuodpg2adrbq0a8rg5h8eq4j.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "861922031134-9s0edhlq1pe88btkat9114r8tqnk2muf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.irontrack.irontrack"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,226 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth UID)
+    // Fields:
+    //   - id: string (required, immutable) - Auth UID
+    //   - email: string (required) - User email address
+    //   - displayName: string (required) - User display name
+    //   - height: number (optional) - Height in cm
+    //   - weight: number (optional) - Weight in kg
+    //   - age: int (optional) - User age
+    //   - gender: string (optional) - User gender
+    //   - goal: string (optional) - Fitness goal
+    //   - experienceLevel: string (optional) - Experience level
+    //   - latestInsight: string (optional) - AI generated insight
+    //   - questionnaire: map (optional) - Onboarding questionnaire responses
+    //
+    // Collection: workout_logs
+    // Document ID: {logId}
+    // Fields:
+    //   - id: string (required) - Unique log ID
+    //   - templateId: string (required) - Associated template ID or empty string
+    //   - name: string (required) - Workout routine / session name
+    //   - startTime: string (required) - ISO 8601 start timestamp
+    //   - endTime: string (required) - ISO 8601 end timestamp
+    //   - exercises: list (required) - List of completed exercises and sets
+    //   - userId: string (required) - Auth UID of the owner
+    //   - heartRateData: list (optional) - List of heart rate BPM readings
+    //
+    // Collection: exercises
+    // Document ID: {exerciseId}
+    // Fields:
+    //   - name: string (required) - Exercise name
+    //   - muscleGroup: string (required) - Targeted muscle group
+    //   - equipment: string (required) - Equipment type
+    //   - instructions: string (optional) - Exercise execution instructions
+    //   - imageUrl: string (optional) - Image or animation URL
+    //   - isCustom: bool (required) - True for user-created, false for defaults
+    //   - userId: string (optional) - Auth UID for custom exercises
+    //
+    // Collection: workout_templates
+    // Document ID: {templateId}
+    // Fields:
+    //   - id: string (required) - Template ID
+    //   - name: string (required) - Template name
+    //   - notes: string (optional) - Routine notes
+    //   - exercises: list (required) - Configured exercises and target sets
+    //   - userId: string (required) - Auth UID of owner
+    //   - folderId: string (optional) - Folder ID
+    //   - sortOrder: number (optional) - Sort priority index
+    //
+    // Collection: workout_folders
+    // Document ID: {folderId}
+    // Fields:
+    //   - id: string (required) - Folder ID
+    //   - name: string (required) - Folder display name
+    //   - userId: string (required) - Auth UID of owner
+    //   - createdAt: string (required) - ISO 8601 creation timestamp
+    //
+    // Collection: body_measurements
+    // Document ID: {measurementId}
+    // Fields:
+    //   - id: string (required) - Measurement ID
+    //   - userId: string (required) - Auth UID of owner
+    //   - date: string (required) - ISO 8601 date timestamp
+    //   - bodyWeight: number (optional) - Body weight in kg
+    //   - chest: number (optional) - Chest circumference in cm
+    //   - waist: number (optional) - Waist circumference in cm
+    //   - hips: number (optional) - Hips circumference in cm
+    //   - bicepLeft: number (optional) - Left bicep in cm
+    //   - bicepRight: number (optional) - Right bicep in cm
+    //   - thighLeft: number (optional) - Left thigh in cm
+    //   - thighRight: number (optional) - Right thigh in cm
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             (!('height' in data) || data.height == null || data.height is number) &&
+             (!('weight' in data) || data.weight == null || data.weight is number) &&
+             (!('age' in data) || data.age == null || data.age is number) &&
+             (!('gender' in data) || data.gender == null || (data.gender is string && data.gender.size() <= 50)) &&
+             (!('goal' in data) || data.goal == null || (data.goal is string && data.goal.size() <= 100)) &&
+             (!('experienceLevel' in data) || data.experienceLevel == null || (data.experienceLevel is string && data.experienceLevel.size() <= 50)) &&
+             (!('latestInsight' in data) || data.latestInsight == null || (data.latestInsight is string && data.latestInsight.size() <= 2000)) &&
+             (!('questionnaire' in data) || data.questionnaire == null || data.questionnaire is map);
+    }
+
+    function isValidWorkoutLog(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.startTime is string && data.startTime.size() <= 64 &&
+             data.endTime is string && data.endTime.size() <= 64 &&
+             data.exercises is list && data.exercises.size() <= 100 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             (!('templateId' in data) || data.templateId is string) &&
+             (!('heartRateData' in data) || data.heartRateData == null || data.heartRateData is list);
+    }
+
+    function isValidExercise(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.muscleGroup is string && data.muscleGroup.size() <= 50 &&
+             data.equipment is string && data.equipment.size() <= 50 &&
+             data.isCustom is bool &&
+             (!('instructions' in data) || data.instructions == null || (data.instructions is string && data.instructions.size() <= 2000)) &&
+             (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 1000)) &&
+             (!('userId' in data) || data.userId == null || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    function isValidWorkoutTemplate(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.exercises is list && data.exercises.size() <= 100 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             (!('notes' in data) || data.notes == null || (data.notes is string && data.notes.size() <= 2000)) &&
+             (!('folderId' in data) || data.folderId == null || (data.folderId is string && data.folderId.size() <= 128)) &&
+             (!('sortOrder' in data) || data.sortOrder is number);
+    }
+
+    function isValidWorkoutFolder(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidBodyMeasurement(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.date is string && data.date.size() <= 64 &&
+             (!('bodyWeight' in data) || data.bodyWeight == null || data.bodyWeight is number) &&
+             (!('chest' in data) || data.chest == null || data.chest is number) &&
+             (!('waist' in data) || data.waist == null || data.waist is number) &&
+             (!('hips' in data) || data.hips == null || data.hips is number) &&
+             (!('bicepLeft' in data) || data.bicepLeft == null || data.bicepLeft is number) &&
+             (!('bicepRight' in data) || data.bicepRight == null || data.bicepRight is number) &&
+             (!('thighLeft' in data) || data.thighLeft == null || data.thighLeft is number) &&
+             (!('thighRight' in data) || data.thighRight == null || data.thighRight is number);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // User profile documents
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.id == userId;
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.id == userId;
+      allow delete: if isOwner(userId);
+    }
+
+    // Workout logs (completed workout sessions)
+    match /workout_logs/{logId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidWorkoutLog(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidWorkoutLog(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Exercises (both pre-seeded defaults and user-created custom exercises)
+    match /exercises/{exerciseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidExercise(request.resource.data) && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.isCustom == false
+      );
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidExercise(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Workout templates / routines
+    match /workout_templates/{templateId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidWorkoutTemplate(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidWorkoutTemplate(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Workout folders
+    match /workout_folders/{folderId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidWorkoutFolder(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidWorkoutFolder(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Body measurements history
+    match /body_measurements/{measurementId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidBodyMeasurement(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidBodyMeasurement(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Default deny for anything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
