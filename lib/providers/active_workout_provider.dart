@@ -9,6 +9,7 @@ import '../repositories/workout_log_repository.dart';
 import '../core/services/live_activity_service.dart';
 import '../core/services/workout_persistence_service.dart';
 import '../core/services/wearable_service.dart';
+import '../core/services/widget_data_service.dart';
 import 'exercise_provider.dart';
 import 'rest_timer_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -87,6 +88,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     if (log == null) {
       LiveActivityService.stop();
       WearableService().sendWorkoutStop();
+      WidgetDataService.updateActiveWorkout(isActive: false);
       return;
     }
 
@@ -150,6 +152,23 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       currentSetWeight: currentSetWeight,
       currentSetReps: currentSetReps,
     );
+
+    // 3. Sync home screen widgets
+    WidgetDataService.updateActiveWorkout(
+      isActive: true,
+      workoutName: log.name,
+      currentExercise: currentExerciseName,
+    );
+  }
+
+  /// Starts a quick empty workout directly (e.g. from Home Screen widget)
+  Future<void> startQuickWorkout() async {
+    final emptyTemplate = WorkoutTemplate(
+      id: 'empty-${DateTime.now().millisecondsSinceEpoch}',
+      name: 'Quick Workout',
+      exercises: [],
+    );
+    await startWorkout(emptyTemplate);
   }
 
   Future<void> startWorkout(WorkoutTemplate template) async {
@@ -414,6 +433,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     ref.read(restTimerProvider.notifier).stop();
     LiveActivityService.stop();
     WearableService().sendWorkoutStop();
+    WidgetDataService.updateActiveWorkout(isActive: false);
     WorkoutPersistenceService.clearActiveWorkout();
     WorkoutPersistenceService.clearRestTimerState();
     state = ActiveWorkoutState(); // Clear without saving
@@ -426,6 +446,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     ref.read(restTimerProvider.notifier).stop();
     LiveActivityService.stop();
     WearableService().sendWorkoutStop();
+    WidgetDataService.updateActiveWorkout(isActive: false);
 
     // Use REAL heart rate data points measured by Wear OS watch during the workout!
     final realSamples = WearableService().sessionHeartRateSamples;
@@ -444,6 +465,12 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
 
     final repo = ref.read(workoutLogRepositoryProvider);
     await repo.saveLog(finalLog);
+
+    // Immediately update home screen widgets with the newly finished workout!
+    try {
+      final allLogs = await repo.getLogs(finalLog.userId);
+      await WidgetDataService.updateWidgetData(allLogs);
+    } catch (_) {}
 
     // Clear backup after successful save to Firestore
     await WorkoutPersistenceService.clearActiveWorkout();

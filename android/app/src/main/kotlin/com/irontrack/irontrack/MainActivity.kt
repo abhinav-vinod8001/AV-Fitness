@@ -78,6 +78,11 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
                     startService(intent)
                     result.success(true)
                 }
+                "getInitialQuickAction" -> {
+                    val action = intent?.getStringExtra("quick_action")
+                    intent?.removeExtra("quick_action")
+                    result.success(action)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -254,6 +259,20 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
     override fun onResume() {
         super.onResume()
         refreshConnectedWatchNodes()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleQuickAction(intent)
+    }
+
+    private fun handleQuickAction(intent: Intent?) {
+        val quickAction = intent?.getStringExtra("quick_action") ?: return
+        intent.removeExtra("quick_action")
+        runOnUiThread {
+            liveActivityMethodChannel?.invokeMethod("onQuickAction", quickAction)
+        }
     }
 
     override fun onDestroy() {

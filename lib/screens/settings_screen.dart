@@ -406,7 +406,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Version 1.8.5',
+                  'Version 1.9.0',
                   style: TextStyle(
                     fontSize: 11,
                     color: cs.onSurfaceVariant.withValues(alpha: 0.35),

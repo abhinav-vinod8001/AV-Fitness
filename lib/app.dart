@@ -6,6 +6,7 @@ import 'providers/settings_provider.dart';
 import 'providers/active_workout_provider.dart';
 import 'providers/weekly_schedule_provider.dart';
 import 'core/services/local_notifications_service.dart';
+import 'core/services/live_activity_service.dart';
 
 class FitnessApp extends ConsumerStatefulWidget {
   const FitnessApp({super.key});
@@ -21,9 +22,33 @@ class _FitnessAppState extends ConsumerState<FitnessApp> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _restoreWorkoutIfNeeded();
+    LiveActivityService.initialize(
+      onQuickAction: (action) {
+        if (mounted) {
+          _handleQuickAction(action);
+        }
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restoreWorkoutIfNeeded();
+      final initialAction = await LiveActivityService.getInitialQuickAction();
+      if (initialAction != null && mounted) {
+        _handleQuickAction(initialAction);
+      }
     });
+  }
+
+  Future<void> _handleQuickAction(String action) async {
+    final router = ref.read(routerProvider);
+    if (action == 'quick_workout') {
+      final active = ref.read(activeWorkoutProvider);
+      if (active.log == null) {
+        await ref.read(activeWorkoutProvider.notifier).startQuickWorkout();
+      }
+      router.push('/workouts/active');
+    } else if (action == 'history') {
+      router.go('/history');
+    }
   }
 
   @override

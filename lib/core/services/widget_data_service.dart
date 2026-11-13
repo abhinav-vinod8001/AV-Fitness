@@ -3,13 +3,14 @@ import 'package:flutter/foundation.dart';
 import '../../models/workout_log_model.dart';
 
 /// Writes workout summary stats to SharedPreferences so native Android
-/// home screen widgets can display them.
+/// home screen widgets of all sizes (1x1, 2x1, 4x1, 2x2, 4x2, 3x3) can display them.
 class WidgetDataService {
   static const String _appGroupId = 'com.irontrack.irontrack';
 
   /// Call this whenever workout history is loaded or updated.
   static Future<void> updateWidgetData(List<WorkoutLog> logs) async {
     try {
+      HomeWidget.setAppGroupId(_appGroupId);
       if (logs.isEmpty) {
         await _writeDefaults();
         await _requestWidgetUpdate();
@@ -42,19 +43,43 @@ class WidgetDataService {
       // --- Last Workout ---
       final lastLog = sorted.first;
       final daysSince = now.difference(lastLog.endTime).inDays;
+      final isToday = daysSince == 0;
+
+      final volumeFormatted = lastLog.totalVolume >= 1000
+          ? '${(lastLog.totalVolume / 1000).toStringAsFixed(1)}k kg'
+          : '${lastLog.totalVolume.toStringAsFixed(0)} kg';
 
       // --- Write to SharedPreferences ---
       await HomeWidget.saveWidgetData<String>('streak', streak.toString());
+      await HomeWidget.saveWidgetData<String>('streak_text', '$streak day streak');
       await HomeWidget.saveWidgetData<String>('weekly_volume', weeklyVolume.toStringAsFixed(0));
       await HomeWidget.saveWidgetData<String>('weekly_workouts', weeklyWorkouts.toString());
       await HomeWidget.saveWidgetData<String>('weekly_sets', weeklySets.toString());
       await HomeWidget.saveWidgetData<String>('last_workout_name', lastLog.name);
       await HomeWidget.saveWidgetData<String>('last_workout_date', _formatDate(lastLog.endTime));
+      await HomeWidget.saveWidgetData<String>('last_workout_volume', volumeFormatted);
       await HomeWidget.saveWidgetData<String>('days_since_last', daysSince.toString());
+      await HomeWidget.saveWidgetData<String>('trained_today', isToday ? 'true' : 'false');
 
       await _requestWidgetUpdate();
     } catch (e) {
       debugPrint('WidgetDataService error: $e');
+    }
+  }
+
+  /// Updates active workout banner in widgets
+  static Future<void> updateActiveWorkout({
+    required bool isActive,
+    String? workoutName,
+    String? currentExercise,
+  }) async {
+    try {
+      await HomeWidget.saveWidgetData<String>('active_workout', isActive ? 'true' : 'false');
+      await HomeWidget.saveWidgetData<String>('active_workout_name', workoutName ?? '');
+      await HomeWidget.saveWidgetData<String>('active_workout_exercise', currentExercise ?? '');
+      await _requestWidgetUpdate();
+    } catch (e) {
+      debugPrint('WidgetDataService updateActiveWorkout error: $e');
     }
   }
 
@@ -100,31 +125,39 @@ class WidgetDataService {
 
   static Future<void> _writeDefaults() async {
     await HomeWidget.saveWidgetData<String>('streak', '0');
+    await HomeWidget.saveWidgetData<String>('streak_text', '0 day streak');
     await HomeWidget.saveWidgetData<String>('weekly_volume', '0');
     await HomeWidget.saveWidgetData<String>('weekly_workouts', '0');
     await HomeWidget.saveWidgetData<String>('weekly_sets', '0');
     await HomeWidget.saveWidgetData<String>('last_workout_name', 'No workouts yet');
-    await HomeWidget.saveWidgetData<String>('last_workout_date', '');
+    await HomeWidget.saveWidgetData<String>('last_workout_date', 'Tap to start');
+    await HomeWidget.saveWidgetData<String>('last_workout_volume', '');
     await HomeWidget.saveWidgetData<String>('days_since_last', '');
+    await HomeWidget.saveWidgetData<String>('trained_today', 'false');
+    await HomeWidget.saveWidgetData<String>('active_workout', 'false');
+    await HomeWidget.saveWidgetData<String>('active_workout_name', '');
+    await HomeWidget.saveWidgetData<String>('active_workout_exercise', '');
   }
 
   static Future<void> _requestWidgetUpdate() async {
-    // Request update for all widget types
-    await HomeWidget.updateWidget(
-      androidName: 'Widget2x2',
-      qualifiedAndroidName: 'com.irontrack.irontrack.Widget2x2',
-    );
-    await HomeWidget.updateWidget(
-      androidName: 'Widget4x2',
-      qualifiedAndroidName: 'com.irontrack.irontrack.Widget4x2',
-    );
-    await HomeWidget.updateWidget(
-      androidName: 'Widget2x1',
-      qualifiedAndroidName: 'com.irontrack.irontrack.Widget2x1',
-    );
-    await HomeWidget.updateWidget(
-      androidName: 'Widget3x3',
-      qualifiedAndroidName: 'com.irontrack.irontrack.Widget3x3',
-    );
+    final widgets = [
+      'Widget1x1',
+      'Widget2x1',
+      'Widget4x1',
+      'Widget2x2',
+      'Widget4x2',
+      'Widget3x3',
+    ];
+
+    for (final widget in widgets) {
+      try {
+        await HomeWidget.updateWidget(
+          androidName: widget,
+          qualifiedAndroidName: 'com.irontrack.irontrack.$widget',
+        );
+      } catch (e) {
+        debugPrint('Failed to update $widget: $e');
+      }
+    }
   }
 }

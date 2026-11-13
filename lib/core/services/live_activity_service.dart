@@ -7,15 +7,18 @@ class LiveActivityService {
   static VoidCallback? _onSkipRestCallback;
   static ValueChanged<int>? _onAddRestCallback;
   static void Function(String exerciseId, String setId)? _onCompleteSetCallback;
+  static ValueChanged<String>? _onQuickActionCallback;
 
   static void initialize({
     VoidCallback? onSkipRest,
     ValueChanged<int>? onAddRest,
     void Function(String exerciseId, String setId)? onCompleteSet,
+    ValueChanged<String>? onQuickAction,
   }) {
-    _onSkipRestCallback = onSkipRest;
-    _onAddRestCallback = onAddRest;
-    _onCompleteSetCallback = onCompleteSet;
+    if (onSkipRest != null) _onSkipRestCallback = onSkipRest;
+    if (onAddRest != null) _onAddRestCallback = onAddRest;
+    if (onCompleteSet != null) _onCompleteSetCallback = onCompleteSet;
+    if (onQuickAction != null) _onQuickActionCallback = onQuickAction;
 
     if (!_initialized) {
       _channel.setMethodCallHandler((call) async {
@@ -37,9 +40,23 @@ class LiveActivityService {
               }
             }
             break;
+          case 'onQuickAction':
+            final action = call.arguments as String?;
+            if (action != null) {
+              _onQuickActionCallback?.call(action);
+            }
+            break;
         }
       });
       _initialized = true;
+    }
+  }
+
+  static Future<String?> getInitialQuickAction() async {
+    try {
+      return await _channel.invokeMethod<String>('getInitialQuickAction');
+    } catch (_) {
+      return null;
     }
   }
 

@@ -5,34 +5,77 @@
     android:layout_height="match_parent"
     android:orientation="horizontal"
     android:background="@drawable/widget_pill_bg"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
-    android:gravity="center">
+    android:paddingStart="14dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:gravity="center_vertical">
 
-    <TextView
+    <!-- Left: Streak & Status -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔥"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/streak_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#FF5722"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/streak_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="day streak"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp"
+                android:fontFamily="sans-serif"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Right: Quick Start Action Button -->
+    <LinearLayout
+        android:id="@+id/btn_start_workout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🔥"
-        android:textSize="18sp" />
+        android:orientation="horizontal"
+        android:background="@drawable/widget_button_bg"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
+        android:gravity="center">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start Workout"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
-        android:layout_marginStart="8dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="→"
-        android:textColor="#FF5722"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginStart="8dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="▶ Start"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
 </LinearLayout>

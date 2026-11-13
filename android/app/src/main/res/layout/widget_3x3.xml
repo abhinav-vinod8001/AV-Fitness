@@ -15,8 +15,8 @@
         android:gravity="center_vertical">
 
         <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:src="@mipmap/launcher_icon" />
 
         <TextView
@@ -25,10 +25,10 @@
             android:layout_weight="1"
             android:text="AV Fitness"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif-medium"
-            android:layout_marginStart="10dp" />
+            android:layout_marginStart="8dp" />
 
         <!-- Streak Badge -->
         <LinearLayout
@@ -36,17 +36,17 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:background="@drawable/widget_accent_bg"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
             android:gravity="center">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🔥"
-                android:textSize="13sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/streak_count"
@@ -54,29 +54,32 @@
                 android:layout_height="wrap_content"
                 android:text="0 day streak"
                 android:textColor="#FF5722"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
-                android:layout_marginStart="4dp" />
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginStart="3dp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Last Workout Section -->
+    <!-- Last Workout Hero Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/widget_stat_card_bg"
         android:padding="12dp"
-        android:layout_marginTop="12dp">
+        android:layout_marginTop="10dp">
 
         <TextView
+            android:id="@+id/last_workout_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="LAST WORKOUT"
-            android:textColor="#666666"
-            android:textSize="10sp"
+            android:text="LAST WORKOUT SUMMARY"
+            android:textColor="#777777"
+            android:textSize="9sp"
+            android:textStyle="bold"
             android:fontFamily="sans-serif-medium"
-            android:letterSpacing="0.1" />
+            android:letterSpacing="0.08" />
 
         <TextView
             android:id="@+id/last_workout_name"
@@ -84,7 +87,7 @@
             android:layout_height="wrap_content"
             android:text="No workouts yet"
             android:textColor="#FFFFFF"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif-medium"
             android:layout_marginTop="2dp"
@@ -95,25 +98,28 @@
             android:id="@+id/last_workout_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="#888888"
+            android:text="Tap to log your first workout"
+            android:textColor="#9E9E9E"
             android:textSize="11sp"
-            android:layout_marginTop="2dp" />
+            android:fontFamily="sans-serif"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
 
-    <!-- Spacer -->
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- Stats Row -->
+    <!-- Stats Row (3 cards) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="8dp">
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="10dp">
 
         <!-- Workouts -->
         <LinearLayout
@@ -123,7 +129,7 @@
             android:orientation="vertical"
             android:gravity="center"
             android:background="@drawable/widget_stat_card_bg"
-            android:padding="10dp"
+            android:padding="8dp"
             android:layout_marginEnd="4dp">
 
             <TextView
@@ -132,15 +138,17 @@
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Workouts"
                 android:textColor="#888888"
-                android:textSize="10sp" />
+                android:textSize="9sp"
+                android:fontFamily="sans-serif" />
         </LinearLayout>
 
         <!-- Volume -->
@@ -151,9 +159,9 @@
             android:orientation="vertical"
             android:gravity="center"
             android:background="@drawable/widget_stat_card_bg"
-            android:padding="10dp"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp">
+            android:padding="8dp"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp">
 
             <TextView
                 android:id="@+id/weekly_volume"
@@ -161,15 +169,17 @@
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Volume"
                 android:textColor="#888888"
-                android:textSize="10sp" />
+                android:textSize="9sp"
+                android:fontFamily="sans-serif" />
         </LinearLayout>
 
         <!-- Sets -->
@@ -180,7 +190,7 @@
             android:orientation="vertical"
             android:gravity="center"
             android:background="@drawable/widget_stat_card_bg"
-            android:padding="10dp"
+            android:padding="8dp"
             android:layout_marginStart="4dp">
 
             <TextView
@@ -189,30 +199,68 @@
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sets"
                 android:textColor="#888888"
-                android:textSize="10sp" />
+                android:textSize="9sp"
+                android:fontFamily="sans-serif" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- CTA Button -->
-    <TextView
+    <!-- Dual Action CTA Row -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start Workout →"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
-        android:gravity="center"
-        android:background="@drawable/widget_button_bg"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
-        android:layout_marginTop="10dp" />
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <!-- Primary Start Workout Button -->
+        <LinearLayout
+            android:id="@+id/btn_start_workout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.2"
+            android:orientation="horizontal"
+            android:background="@drawable/widget_button_bg"
+            android:paddingVertical="9dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▶ Start Workout"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <!-- Secondary History Button -->
+        <LinearLayout
+            android:id="@+id/btn_history"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:background="@drawable/widget_stat_card_bg"
+            android:paddingVertical="9dp"
+            android:gravity="center"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📅 History"
+                android:textColor="#CCCCCC"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

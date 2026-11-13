@@ -16,54 +16,108 @@ open class QuickWorkoutWidgetProvider : AppWidgetProvider() {
         // Read stats from SharedPreferences (written by Flutter via home_widget)
         val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
         val streak = prefs.getString("streak", "0") ?: "0"
+        val streakText = prefs.getString("streak_text", "$streak day streak") ?: "$streak day streak"
         val weeklyVolume = prefs.getString("weekly_volume", "0") ?: "0"
         val weeklyWorkouts = prefs.getString("weekly_workouts", "0") ?: "0"
         val weeklySets = prefs.getString("weekly_sets", "0") ?: "0"
         val lastWorkoutName = prefs.getString("last_workout_name", "No workouts yet") ?: "No workouts yet"
         val lastWorkoutDate = prefs.getString("last_workout_date", "") ?: ""
+        val lastWorkoutVolume = prefs.getString("last_workout_volume", "") ?: ""
+        val daysAgo = prefs.getString("days_since_last", "") ?: ""
+        val trainedToday = prefs.getString("trained_today", "false") == "true"
+        val activeWorkout = prefs.getString("active_workout", "false") == "true"
+        val activeWorkoutName = prefs.getString("active_workout_name", "") ?: ""
 
         for (appWidgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, layoutId)
 
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                putExtra("quick_action", "quick_workout")
+            // 1. Container tap -> Open Main Activity
+            val mainIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("quick_action", "open")
             }
-
-            val pendingIntent = PendingIntent.getActivity(
+            val mainPendingIntent = PendingIntent.getActivity(
                 context,
-                appWidgetId,
-                intent,
+                appWidgetId * 10,
+                mainIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
+            views.setOnClickPendingIntent(R.id.widget_container, mainPendingIntent)
 
-            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-
-            // Safely bind data — use try/catch for views that may not exist in all layouts
-            try { views.setTextViewText(R.id.streak_count, streak) } catch (_: Exception) {}
-            try { views.setTextViewText(R.id.weekly_volume, formatVolume(weeklyVolume)) } catch (_: Exception) {}
-            try { views.setTextViewText(R.id.weekly_workouts, weeklyWorkouts) } catch (_: Exception) {}
-            try { views.setTextViewText(R.id.weekly_sets, weeklySets) } catch (_: Exception) {}
-            try { views.setTextViewText(R.id.last_workout_name, lastWorkoutName) } catch (_: Exception) {}
-            try { views.setTextViewText(R.id.last_workout_date, lastWorkoutDate) } catch (_: Exception) {}
-
-            // For 2x2 widget: build the label text
+            // 2. Start Workout button tap -> Open Quick Workout / Starter
+            val startIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("quick_action", "quick_workout")
+            }
+            val startPendingIntent = PendingIntent.getActivity(
+                context,
+                appWidgetId * 10 + 1,
+                startIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
             try {
-                val daysAgo = prefs.getString("days_since_last", "") ?: ""
-                val label = if (daysAgo.isNotEmpty() && daysAgo != "0") {
-                    if (daysAgo == "1") "Last workout: yesterday"
-                    else "Last workout: $daysAgo days ago"
-                } else if (daysAgo == "0") {
+                views.setOnClickPendingIntent(R.id.btn_start_workout, startPendingIntent)
+            } catch (_: Exception) {}
+
+            // 3. History button tap -> Open History screen
+            val historyIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("quick_action", "history")
+            }
+            val historyPendingIntent = PendingIntent.getActivity(
+                context,
+                appWidgetId * 10 + 2,
+                historyIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            try {
+                views.setOnClickPendingIntent(R.id.btn_history, historyPendingIntent)
+            } catch (_: Exception) {}
+
+            // Streak bindings
+            try { views.setTextViewText(R.id.streak_count, streak) } catch (_: Exception) {}
+            try {
+                val label = if (trainedToday) {
                     "Trained today ✓"
+                } else if (streak != "0") {
+                    "$streak day streak"
+                } else {
+                    "Start your streak"
+                }
+                views.setTextViewText(R.id.streak_label, label)
+            } catch (_: Exception) {}
+
+            // Weekly stats bindings
+            try { views.setTextViewText(R.id.weekly_workouts, weeklyWorkouts) } catch (_: Exception) {}
+            try { views.setTextViewText(R.id.weekly_volume, formatVolume(weeklyVolume)) } catch (_: Exception) {}
+            try { views.setTextViewText(R.id.weekly_sets, weeklySets) } catch (_: Exception) {}
+
+            // Last workout bindings
+            try { views.setTextViewText(R.id.last_workout_name, lastWorkoutName) } catch (_: Exception) {}
+            try {
+                val dateString = if (lastWorkoutVolume.isNotEmpty() && lastWorkoutDate.isNotEmpty()) {
+                    "$lastWorkoutDate • $lastWorkoutVolume"
+                } else if (lastWorkoutDate.isNotEmpty()) {
+                    lastWorkoutDate
                 } else {
                     "Tap to start training"
                 }
-                views.setTextViewText(R.id.last_workout_label, label)
+                views.setTextViewText(R.id.last_workout_date, dateString)
             } catch (_: Exception) {}
 
-            // For 3x3: streak badge text
+            // Summary label for 2x2 and 4x2
             try {
-                views.setTextViewText(R.id.streak_count, "$streak day streak")
+                val summary = if (activeWorkout && activeWorkoutName.isNotEmpty()) {
+                    "⚡ In Progress: $activeWorkoutName"
+                } else if (trainedToday) {
+                    "Trained today ✓ • $lastWorkoutName"
+                } else if (daysAgo.isNotEmpty() && daysAgo != "0") {
+                    if (daysAgo == "1") "Yesterday: $lastWorkoutName"
+                    else "$daysAgo days ago: $lastWorkoutName"
+                } else {
+                    "Tap to start training"
+                }
+                views.setTextViewText(R.id.last_workout_label, summary)
             } catch (_: Exception) {}
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -84,6 +138,24 @@ open class QuickWorkoutWidgetProvider : AppWidgetProvider() {
     }
 }
 
+class Widget1x1 : QuickWorkoutWidgetProvider() {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        updateWidgets(context, appWidgetManager, appWidgetIds, R.layout.widget_1x1)
+    }
+}
+
+class Widget2x1 : QuickWorkoutWidgetProvider() {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        updateWidgets(context, appWidgetManager, appWidgetIds, R.layout.widget_2x1)
+    }
+}
+
+class Widget4x1 : QuickWorkoutWidgetProvider() {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        updateWidgets(context, appWidgetManager, appWidgetIds, R.layout.widget_4x1)
+    }
+}
+
 class Widget2x2 : QuickWorkoutWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         updateWidgets(context, appWidgetManager, appWidgetIds, R.layout.widget_2x2)
@@ -93,12 +165,6 @@ class Widget2x2 : QuickWorkoutWidgetProvider() {
 class Widget4x2 : QuickWorkoutWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         updateWidgets(context, appWidgetManager, appWidgetIds, R.layout.widget_4x2)
-    }
-}
-
-class Widget2x1 : QuickWorkoutWidgetProvider() {
-    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        updateWidgets(context, appWidgetManager, appWidgetIds, R.layout.widget_2x1)
     }
 }
 
