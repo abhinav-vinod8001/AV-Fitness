@@ -193,6 +193,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
 
     state = ActiveWorkoutState(log: log, elapsedTime: Duration.zero);
     WearableService().startSession();
+    WearableService().sendWorkoutStart(log.name);
     _syncLiveActivity();
     _persistState(); // Save immediately on start
   }
@@ -558,6 +559,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
 
     state = ActiveWorkoutState(log: savedLog, elapsedTime: elapsed);
     WearableService().startSession();
+    WearableService().sendWorkoutStart(savedLog.name);
     _syncLiveActivity();
 
     // Restore rest timer if applicable

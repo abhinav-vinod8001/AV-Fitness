@@ -132,6 +132,16 @@ class WearableService {
     _currentBpm = null;
   }
 
+  Future<void> sendWorkoutStart(String workoutName) async {
+    try {
+      await _channel.invokeMethod('sendWorkoutStart', {
+        'workoutName': workoutName,
+      });
+    } catch (e) {
+      debugPrint('WearableService sendWorkoutStart error: $e');
+    }
+  }
+
   Future<void> sendWorkoutState({
     required String workoutName,
     required String currentExercise,

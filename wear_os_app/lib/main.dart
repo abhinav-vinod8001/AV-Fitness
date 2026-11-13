@@ -260,6 +260,24 @@ class _WatchHomeScreenState extends State<WatchHomeScreen>
                 _showBanner('Rest Complete! Next set ready.');
               }
 
+              // AUTO-START: When phone starts a workout, activate HR, keep screen on, & switch to workout screen
+              final wasIdle = !_workoutState.hasActiveWorkout;
+              if (wasIdle && newState.hasActiveWorkout) {
+                HealthService.vibrateOnce();
+                _showBanner('Workout Started: ${newState.workoutName}');
+                HealthService.startHeartRate();
+                HealthService.setKeepScreenOn(true);
+                Future.microtask(() {
+                  if (_pageController.hasClients && _currentPage != 1) {
+                    _pageController.animateToPage(
+                      1,
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                    );
+                  }
+                });
+              }
+
               setState(() {
                 _workoutState = newState;
                 _isPhoneConnected = true;
@@ -269,11 +287,22 @@ class _WatchHomeScreenState extends State<WatchHomeScreen>
           break;
 
         case 'workout_stop':
+          HealthService.stopHeartRate();
+          HealthService.setKeepScreenOn(false);
           setState(() {
             _workoutState = const WatchWorkoutState();
           });
           _showBanner('Workout Finished!');
           HealthService.vibrateOnce();
+          Future.microtask(() {
+            if (_pageController.hasClients && _currentPage != 0) {
+              _pageController.animateToPage(
+                0,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+              );
+            }
+          });
           break;
 
         case 'connection_changed':

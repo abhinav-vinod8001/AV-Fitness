@@ -136,6 +136,16 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
                     sendToConnectedWatches("/workout/state", stateJson.toByteArray(Charsets.UTF_8))
                     result.success(true)
                 }
+                "sendWorkoutStart" -> {
+                    val workoutName = call.argument<String>("workoutName") ?: "Active Workout"
+                    val json = JSONObject().apply {
+                        put("action", "start")
+                        put("workoutName", workoutName)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                    sendToConnectedWatches("/workout/start", json.toString().toByteArray(Charsets.UTF_8))
+                    result.success(true)
+                }
                 "sendWorkoutStop" -> {
                     sendToConnectedWatches("/workout/stop", ByteArray(0))
                     result.success(true)
@@ -175,7 +185,7 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
     private fun sendToConnectedWatches(path: String, data: ByteArray) {
         scope.launch {
             try {
-                val nodes: Collection<Node> = if (connectedWatchNodes.isNotEmpty()) connectedWatchNodes else Tasks.await(nodeClient.connectedNodes)
+                val nodes: List<Node> = Tasks.await(nodeClient.connectedNodes)
                 for (node in nodes) {
                     messageClient.sendMessage(node.id, path, data)
                 }

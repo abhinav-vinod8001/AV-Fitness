@@ -27,6 +27,10 @@ import kotlinx.coroutines.guava.await
 import org.json.JSONObject
 
 class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener, CapabilityClient.OnCapabilityChangedListener {
+    companion object {
+        var activeInstance: MainActivity? = null
+    }
+
     private val HEALTH_CHANNEL = "com.irontrack.watch/health"
     private val HEALTH_EVENTS = "com.irontrack.watch/health_events"
     private val HAPTIC_CHANNEL = "com.irontrack.watch/haptics"
@@ -44,6 +48,25 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
     // Cache of connected phone nodes
     private val connectedPhoneNodes = mutableSetOf<Node>()
 
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        activeInstance = this
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val state = intent.getStringExtra("workout_state")
+        if (state != null) {
+            handleIncomingMessage("/workout/state", state)
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -60,6 +83,14 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                     eventSink = events
                     refreshConnectedNodes()
+                    val pendingState = intent?.getStringExtra("workout_state")
+                    if (pendingState != null) {
+                        eventSink?.success(mapOf(
+                            "type" to "workout_state",
+                            "data" to pendingState
+                        ))
+                        intent?.removeExtra("workout_state")
+                    }
                 }
                 override fun onCancel(arguments: Any?) {
                     eventSink = null
@@ -293,12 +324,9 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
         }
     }
 
-    override fun onMessageReceived(messageEvent: MessageEvent) {
-        val path = messageEvent.path
-        val dataStr = String(messageEvent.data, Charsets.UTF_8)
-
+    fun handleIncomingMessage(path: String, dataStr: String) {
         when (path) {
-            "/workout/state" -> {
+            "/workout/start", "/workout/state" -> {
                 runOnUiThread {
                     eventSink?.success(mapOf(
                         "type" to "workout_state",
@@ -321,9 +349,16 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
                         "timestamp" to System.currentTimeMillis()
                     ))
                 }
-                // Send pong back with battery level
-                sendPong(messageEvent.sourceNodeId)
             }
+        }
+    }
+
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        val path = messageEvent.path
+        val dataStr = String(messageEvent.data, Charsets.UTF_8)
+        handleIncomingMessage(path, dataStr)
+        if (path == "/watch/ping") {
+            sendPong(messageEvent.sourceNodeId)
         }
     }
 
@@ -391,6 +426,7 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener,
     }
 
     override fun onDestroy() {
+        if (activeInstance == this) activeInstance = null
         messageClient.removeListener(this)
         capabilityClient.removeListener(this)
         stopHeartRateMonitoring()
