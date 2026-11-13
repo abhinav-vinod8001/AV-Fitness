@@ -390,6 +390,75 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
           }),
 
+          const SizedBox(height: 12),
+
+          // ── About & Version ─────────────────────────
+          _SectionCard(
+            children: [
+              _SectionTitle(icon: Icons.info_outline_rounded, title: 'About & Version'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Icon(Icons.fitness_center_rounded, color: cs.primary, size: 22),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'AV Fitness',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'APK Version 1.9.0',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: cs.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      'v1.9.0',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Divider(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              const SizedBox(height: 8),
+              const _InfoRow(label: 'APK Version', value: '1.9.0'),
+              const _InfoRow(label: 'Build Number', value: '2 (Release APK)'),
+              const _InfoRow(label: 'Wear OS Companion', value: 'v1.9.0 (Real-time HR)'),
+              const _InfoRow(label: 'Home Screen Widgets', value: '1x1, 2x1, 4x1, 2x2, 4x2, 3x3'),
+            ],
+          ),
+
           const SizedBox(height: 24),
 
           // ── App Info ────────────────────────────────
@@ -406,7 +475,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Version 1.9.0',
+                  'APK Version 1.9.0 (Build 2)',
                   style: TextStyle(
                     fontSize: 11,
                     color: cs.onSurfaceVariant.withValues(alpha: 0.35),
@@ -789,6 +858,43 @@ class _UnitChip extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Info Row for About section
+// ─────────────────────────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
