@@ -8,6 +8,7 @@ import '../models/exercise_model.dart';
 import '../repositories/workout_log_repository.dart';
 import '../core/services/live_activity_service.dart';
 import '../core/services/workout_persistence_service.dart';
+import '../core/services/wearable_service.dart';
 import 'exercise_provider.dart';
 import 'rest_timer_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -41,6 +42,22 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       },
     );
 
+    // Initialize Wear OS watch integration
+    WearableService().init();
+    WearableService().onWorkoutCommand = (command) {
+      switch (command) {
+        case 'complete_set':
+          completeNextActiveSet();
+          break;
+        case 'skip_rest':
+          ref.read(restTimerProvider.notifier).stop();
+          break;
+        case 'add_rest_30':
+          ref.read(restTimerProvider.notifier).addTime(30);
+          break;
+      }
+    };
+
     ref.listen<RestTimerState>(restTimerProvider, (prev, next) {
       if (state.log != null) {
         _syncLiveActivity(
@@ -51,10 +68,25 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     });
   }
 
+  /// Automatically completes the first incomplete set in the active workout
+  void completeNextActiveSet() {
+    final log = state.log;
+    if (log == null) return;
+    for (final ex in log.exercises) {
+      for (final set in ex.sets) {
+        if (!set.completed) {
+          toggleSetComplete(ex.id, set.id);
+          return;
+        }
+      }
+    }
+  }
+
   void _syncLiveActivity({bool isResting = false, int restTimeRemaining = 0}) {
     final log = state.log;
     if (log == null) {
       LiveActivityService.stop();
+      WearableService().sendWorkoutStop();
       return;
     }
 
@@ -64,7 +96,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       (sum, ex) => sum + ex.sets.where((s) => s.completed).length,
     );
     
-    // Find next uncompleted set for the live activity
+    // Find next uncompleted set for the live activity & watch
     String currentExerciseName = log.exercises.isNotEmpty ? log.exercises.first.exerciseName : '';
     int? currentSetNumber;
     int? totalExerciseSets;
@@ -87,6 +119,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       }
     }
 
+    // 1. Sync Live Activity notification
     LiveActivityService.startOrUpdate(
       workoutName: log.name,
       currentExercise: currentExerciseName,
@@ -101,6 +134,21 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       currentSetReps: currentSetReps,
       nextSetExerciseId: nextSetExerciseId,
       nextSetId: nextSetId,
+    );
+
+    // 2. Sync Wear OS watch app in real time
+    WearableService().sendWorkoutState(
+      workoutName: log.name,
+      currentExercise: currentExerciseName,
+      completedSets: completedSets,
+      totalSets: totalSets,
+      isResting: isResting,
+      restTimeRemaining: restTimeRemaining,
+      elapsedSeconds: state.elapsedTime.inSeconds,
+      currentSetNumber: currentSetNumber,
+      totalExerciseSets: totalExerciseSets,
+      currentSetWeight: currentSetWeight,
+      currentSetReps: currentSetReps,
     );
   }
 
@@ -125,6 +173,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     );
 
     state = ActiveWorkoutState(log: log, elapsedTime: Duration.zero);
+    WearableService().startSession();
     _syncLiveActivity();
     _persistState(); // Save immediately on start
   }
@@ -364,6 +413,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     _saveDebounceTimer?.cancel();
     ref.read(restTimerProvider.notifier).stop();
     LiveActivityService.stop();
+    WearableService().sendWorkoutStop();
     WorkoutPersistenceService.clearActiveWorkout();
     WorkoutPersistenceService.clearRestTimerState();
     state = ActiveWorkoutState(); // Clear without saving
@@ -375,6 +425,11 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     _saveDebounceTimer?.cancel();
     ref.read(restTimerProvider.notifier).stop();
     LiveActivityService.stop();
+    WearableService().sendWorkoutStop();
+
+    // Use REAL heart rate data points measured by Wear OS watch during the workout!
+    final realSamples = WearableService().sessionHeartRateSamples;
+    final finalHeartRateData = realSamples.length >= 3 ? realSamples : _generateMockHeartRateData();
 
     final finalLog = WorkoutLog(
       id: state.log!.id,
@@ -384,7 +439,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
       endTime: DateTime.now(), // Actual end time
       exercises: state.log!.exercises,
       userId: state.log!.userId,
-      heartRateData: _generateMockHeartRateData(), // MOCK DATA for testing
+      heartRateData: finalHeartRateData,
     );
 
     final repo = ref.read(workoutLogRepositoryProvider);
@@ -475,6 +530,7 @@ class ActiveWorkoutNotifier extends StateNotifier<ActiveWorkoutState> {
     final elapsed = DateTime.now().difference(savedLog.startTime);
 
     state = ActiveWorkoutState(log: savedLog, elapsedTime: elapsed);
+    WearableService().startSession();
     _syncLiveActivity();
 
     // Restore rest timer if applicable

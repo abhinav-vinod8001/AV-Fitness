@@ -17,6 +17,7 @@ import '../../core/constants/default_exercises.dart';
 import '../../core/utils/app_animations.dart';
 import '../../core/utils/unit_converter.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/wearable_provider.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
@@ -26,14 +27,12 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
-  // Simulating watch connection status
-  bool _isWatchConnected = true;
-
   @override
   Widget build(BuildContext context) {
     final activeState = ref.watch(activeWorkoutProvider);
     final log = activeState.log;
     final weightUnit = ref.watch(settingsProvider).weightUnit;
+    final wearableState = ref.watch(wearableProvider);
 
     if (log == null) {
       return Scaffold(
@@ -71,35 +70,71 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         ),
         centerTitle: false,
         actions: [
-          // Watch connection status logo
+          // Live Heart Rate Badge (shows real BPM streamed from Wear OS)
+          if (wearableState.isConnected)
+            GestureDetector(
+              onTap: () => _showWearOsModal(context, ref, wearableState),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF5350).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFEF5350).withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.favorite, color: Color(0xFFEF5350), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      wearableState.currentBpm != null ? '${wearableState.currentBpm}' : '--',
+                      style: const TextStyle(color: Color(0xFFEF5350), fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      'BPM',
+                      style: TextStyle(
+                        color: const Color(0xFFEF5350).withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Real Wear OS connection status icon
           GestureDetector(
             onTap: () {
-              setState(() {
-                _isWatchConnected = !_isWatchConnected; // Toggle for demo purposes
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_isWatchConnected ? 'Watch connected' : 'Watch disconnected'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              HapticFeedback.lightImpact();
+              _showWearOsModal(context, ref, wearableState);
             },
             child: Padding(
-              padding: const EdgeInsets.only(right: 0.0), // Reduced to move closer to timer
+              padding: const EdgeInsets.only(right: 4.0),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.watch, size: 28),
+                  Icon(
+                    Icons.watch,
+                    size: 26,
+                    color: wearableState.isConnected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   Positioned(
-                    right: 2,
-                    bottom: 10,
+                    right: 0,
+                    bottom: 8,
                     child: Container(
-                      width: 10,
-                      height: 10,
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
-                        color: _isWatchConnected ? Colors.green : Colors.red,
+                        color: wearableState.isConnected
+                            ? Colors.greenAccent
+                            : (wearableState.isPinging ? Colors.amber : Colors.grey),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+                        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
                       ),
                     ),
                   ),
@@ -200,6 +235,248 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       ),
       bottomSheet: const RestTimerBanner(), 
     ));
+  }
+
+  void _showWearOsModal(BuildContext context, WidgetRef ref, WearableState watchState) {
+    AppAnimations.showAnimatedBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final liveWatch = ref.watch(wearableProvider);
+            final cs = Theme.of(context).colorScheme;
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.watch, color: cs.onPrimaryContainer, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Wear OS Companion',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: liveWatch.isConnected ? Colors.greenAccent : Colors.grey,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    liveWatch.isConnected
+                                        ? (liveWatch.watchName.isNotEmpty ? liveWatch.watchName : 'Connected')
+                                        : 'Disconnected • Open AV Fitness on watch',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: liveWatch.isConnected ? cs.onSurface : cs.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (liveWatch.batteryLevel != null && liveWatch.batteryLevel! >= 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: cs.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.battery_charging_full_rounded, size: 14),
+                                const SizedBox(width: 4),
+                                Text('${liveWatch.batteryLevel}%', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Heart Rate Live Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFEF5350).withValues(alpha: 0.15),
+                            const Color(0xFFFF7043).withValues(alpha: 0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFEF5350).withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.favorite, color: Color(0xFFEF5350), size: 20),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'LIVE HEART RATE',
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (liveWatch.isConnected && liveWatch.currentBpm != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF5350),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Text(
+                                    'ACTIVE STREAM',
+                                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                liveWatch.currentBpm != null ? '${liveWatch.currentBpm}' : '--',
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFEF5350),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'BPM',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // Stats row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildMiniWatchStat('AVG', liveWatch.averageBpm > 0 ? '${liveWatch.averageBpm}' : '--', cs),
+                              _buildMiniWatchStat('MAX', liveWatch.maxBpm > 0 ? '${liveWatch.maxBpm}' : '--', cs),
+                              _buildMiniWatchStat('MIN', liveWatch.minBpm > 0 ? '${liveWatch.minBpm}' : '--', cs),
+                              _buildMiniWatchStat('SAMPLES', '${liveWatch.samplesCount}', cs),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.vibration_rounded, size: 18),
+                            label: Text(liveWatch.isPinging ? 'Pinging...' : 'Ping Watch'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: liveWatch.isPinging
+                                ? null
+                                : () async {
+                                    HapticFeedback.lightImpact();
+                                    await ref.read(wearableProvider.notifier).pingWatch();
+                                    if (ctx.mounted) {
+                                      ScaffoldMessenger.of(ctx).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Pinged watch! Watch should vibrate.'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            icon: const Icon(Icons.sync_rounded, size: 18),
+                            label: const Text('Refresh'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              HapticFeedback.lightImpact();
+                              await ref.read(wearableProvider.notifier).refreshConnection();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (liveWatch.pingLatencyMs != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Watch responded in ${liveWatch.pingLatencyMs}ms ✓',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 11, color: Colors.greenAccent, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMiniWatchStat(String label, String value, ColorScheme cs) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600)),
+      ],
+    );
   }
 
   void _showFinishWorkoutModal(BuildContext context, WidgetRef ref, WorkoutLog log, double volume, int completedSets, String weightUnit) {
