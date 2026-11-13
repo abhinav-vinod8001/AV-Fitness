@@ -426,30 +426,53 @@ class _WatchHomeScreenState extends State<WatchHomeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 12),
-          // Connection pill
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: _isPhoneConnected ? Colors.greenAccent : Colors.amber,
-                  shape: BoxShape.circle,
-                ),
+          const SizedBox(height: 10),
+          // Connection & Brand pill with Logo
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _isPhoneConnected
+                    ? Colors.greenAccent.withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.15),
+                width: 0.8,
               ),
-              const SizedBox(width: 5),
-              Text(
-                _isPhoneConnected ? 'AV FITNESS' : 'OFFLINE',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 13,
+                    height: 13,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 5),
+                const Text(
+                  'AV FITNESS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: _isPhoneConnected ? Colors.greenAccent : Colors.amber,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
           ),
           const Spacer(),
 
@@ -549,20 +572,41 @@ class _WatchHomeScreenState extends State<WatchHomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.fitness_center_rounded, color: Color(0xFFFF5722), size: 28),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFF5722).withValues(alpha: 0.8), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF5722).withValues(alpha: 0.35),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
             const Text(
               'No Active Workout',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               _isPhoneConnected
                   ? 'Start a workout on your phone to track sets & rest here.'
                   : 'Connect to phone to sync live workout routines.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.5)),
+              style: TextStyle(fontSize: 9.5, color: Colors.white.withValues(alpha: 0.5)),
             ),
             const Spacer(),
             _buildPageIndicator(),
@@ -581,7 +625,37 @@ class _WatchHomeScreenState extends State<WatchHomeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          // Header Row with Logo and Workout Tag
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 12,
+                  height: 12,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  _workoutState.workoutName.isNotEmpty ? _workoutState.workoutName.toUpperCase() : 'AV FITNESS',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFFF7043),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           // Current Exercise Name
           Text(
             _workoutState.currentExercise,
@@ -750,15 +824,31 @@ class _WatchHomeScreenState extends State<WatchHomeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 8),
-          const Text(
-            'WATCH TOOLS',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
+          const SizedBox(height: 6),
+          // Logo and App Version
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 15,
+                  height: 15,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 5),
+              const Text(
+                'AV FITNESS v1.9.0',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
 
