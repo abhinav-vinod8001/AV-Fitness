@@ -23,7 +23,7 @@
             android:value="true" />
 
         <service
-            android:name=".WatchWearableListenerService"
+            android:name="com.irontrack.irontrack_watch.WatchWearableListenerService"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
@@ -39,7 +39,7 @@
         </service>
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.irontrack.irontrack_watch.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""

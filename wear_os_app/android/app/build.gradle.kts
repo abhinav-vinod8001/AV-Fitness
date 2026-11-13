@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.irontrack.irontrack_watch"
+        applicationId = "com.irontrack.irontrack"
         minSdk = 30 // Wear OS 3.0+
         targetSdk = 35
         versionCode = flutter.versionCode
